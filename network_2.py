@@ -202,7 +202,6 @@ class Router:
     def forward(self):
         # make sure MTU is set to 30
         self.out_intf_L[0].mtu = 30
-        print('MTU SET TO 30')
         for i in range(len(self.in_intf_L)):
             pkt_S = None
             try:
@@ -214,12 +213,17 @@ class Router:
                     # HERE you will need to implement a lookup into the 
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
-                    ## for all our possible fragment packets (p) do things
-                    for x in p:
-                        self.out_intf_L[i].put(x.to_byte_S(), True)
+                    # if p is a list iterate through it, else just do what is done is default network.py
+                    if(isinstance(p, list)):
+                        ## for all our possible fragment packets (p) do things
+                        for x in p:
+                            self.out_intf_L[i].put(x.to_byte_S(), True)
+                            print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                            % (self, x.to_byte_S(), i, i, self.out_intf_L[0].mtu))
+                    else:
+                        self.out_intf_L[i].put(p.to_byte_S(), True)
                         print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                        % (self, x.to_byte_S(), i, i, self.out_intf_L[0].mtu))
-
+                        % (self, p, i, i, self.out_intf_L[i].mtu))
 
             except queue.Full:
                 print('%s: packet "%s" lost on interface %d' % (self, p, i))
