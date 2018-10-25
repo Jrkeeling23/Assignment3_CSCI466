@@ -3,24 +3,24 @@ Created on Oct 12, 2016
 
 @author: mwittie
 '''
-import network
+import network_2
 import link
 import threading
 from time import sleep
 
 ##configuration parameters
 router_queue_size = 0 #0 means unlimited
-simulation_time = 1 #give the network sufficient time to transfer all packets before quitting
+simulation_time = 5 #give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
     object_L = [] #keeps track of objects, so we can kill their threads
 
     #create network nodes
-    client = network.Host(1)
+    client = network_2.Host(1)
     object_L.append(client)
-    server = network.Host(2)
+    server = network_2.Host(2)
     object_L.append(server)
-    router_a = network.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
+    router_a = network_2.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
     object_L.append(router_a)
 
     #create a Link Layer to keep track of links between network nodes
@@ -43,16 +43,12 @@ if __name__ == '__main__':
 
     for t in thread_L:
         t.start()
-    # create string for messege
+        # create string for messege
     messege = 'THIS IS A REALLLY LONG STRRRRRRRRRRRRRRRRIIIIIIING...%d'
     # create some send events
 
     for i in range(1):
-         client.udt_send(2,messege % i)
-
-
-
-
+        client.udt_send(2, messege % i)
     # give the network sufficient time to transfer all packets before quitting
     sleep(simulation_time)
 
