@@ -159,10 +159,9 @@ class Host:
                 self.fragmented_data.append(pkt_S[NetworkPacket.dst_addr_S_length:])
                 # gets the actual flags and other stuff instead of fragmented data
                 # join the data stored in the list
-                paks = ''
-                paks.join(self.fragmented_data)
+
                 # send recived messege
-                print('%s: received packet "%s" on the in interface' % (self, paks))
+                print('%s: received packet "%s" on the in interface' % (self, ''.join(self.fragmented_data)))
                 # clear the fragmented_packs for next packet
                 self.fragmented_data.clear()
 
