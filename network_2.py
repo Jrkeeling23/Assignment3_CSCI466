@@ -221,7 +221,7 @@ class Router:
                             % (self, x.to_byte_S(), i, i, self.out_intf_L[0].mtu))
                     else:
                         self.out_intf_L[i].put(p.to_byte_S(), True)
-                        print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                        print('2: %s: forwarding packet "%s" from interface %d to %d with mtu %d' \
                         % (self, p, i, i, self.out_intf_L[i].mtu))
 
             except queue.Full:
