@@ -35,14 +35,16 @@ class Interface:
 class NetworkPacket:
     ## packet encoding lengths
     dst_addr_S_length = 5
+    src_addr_S_length = 5
     # flag like in IP header
     flag_length = 1
     # fragmentation offset
     frag_offset_len = 2
 
-    ##@param dst_addr: address of the destination host
+    # @param dst_addr: address of the destination host
     # @param data_S: packet payload
-    def __init__(self, dst_addr, data_S, flag=0, frag_offset=0):
+    def __init__(self, source_address, dst_addr, data_S, flag=0, frag_offset=0):
+        self.src_address = source_address
         self.dst_addr = dst_addr
         self.data_S = data_S
         # set flag
@@ -50,13 +52,14 @@ class NetworkPacket:
         # set offset
         self.offset = frag_offset
 
-    ## called when printing the object
+    # called when printing the object
     def __str__(self):
         return self.to_byte_S()
 
-    ## convert packet to a byte string for transmission over links
+    # convert packet to a byte string for transmission over links
     def to_byte_S(self):
-        byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
+        byte_S = str(self.src_address).zfill(self.src_addr_S_length)
+        byte_S += str(self.dst_addr).zfill(self.dst_addr_S_length)
         # if flag not zero then += flag with new values for new packet
         if self.flag != 0:
             byte_S += str(self.flag).zfill(self.flag_length)
@@ -69,8 +72,9 @@ class NetworkPacket:
     # @param byte_S: byte string representation of the packet
     @classmethod
     def from_byte_S(self, mtu, byte_S):
-        dst_addr = int(byte_S[0: NetworkPacket.dst_addr_S_length])
-        data_S = byte_S[NetworkPacket.dst_addr_S_length:]
+        src_addr = int(byte_S[0: NetworkPacket.src_addr_S_length])
+        dst_addr = int(byte_S[0: NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length])
+        data_S = byte_S[NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length:]
         # setting frag to 0 and offset to so as well as creating array to store data if packet is fragmented
         fragment_packs = []
         # use to tell if fragment packet
@@ -89,12 +93,12 @@ class NetworkPacket:
                 # get the value of the next offset
                 next_offset = offset + mtu - self.flag_length - self.frag_offset_len
                 # add new network packet to the fragment packs list
-                fragment_packs.append(self(dst_addr, data_S[offset:next_offset], fragment, offset))
+                fragment_packs.append(self(src_addr, dst_addr, data_S[offset:next_offset], fragment, offset))
                 # set offset to next_offset
                 offset = next_offset
             return fragment_packs
         else:
-            return self(dst_addr, data_S, fragment, offset)
+            return self(src_addr, dst_addr, data_S, fragment, offset)
         # end of new network packet
 
 
@@ -122,11 +126,11 @@ class Host:
         # p = NetworkPacket(dst_addr, data_S)
         # if is to large then split it up
         if (len(data_S) > self.out_intf_L[0].mtu):
-            # max length for text is text - addr length (5)
-            max_len = self.out_intf_L[0].mtu - 5
+            # max length for text is text - dst_addr length - src_addr length (10)
+            max_len = self.out_intf_L[0].mtu - 10
             # split packet into 2 packets with length specidied
-            packet_1 = NetworkPacket(dst_addr, data_S[0:max_len])  # get data from start of zero to our max length
-            packet_2 = NetworkPacket(dst_addr, data_S[max_len:])  # get all data after our max length
+            packet_1 = NetworkPacket(self.addr, dst_addr, data_S[0:max_len])  # get data from start0 to our max length
+            packet_2 = NetworkPacket(self.addr, dst_addr, data_S[max_len:])  # get all data after our max length
             # send the two packets (copy pasted from original code)
             self.out_intf_L[0].put(packet_1.to_byte_S())  # send packets always enqueued successfully
             print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, packet_1, self.out_intf_L[0].mtu))
@@ -146,14 +150,14 @@ class Host:
         # update do deal with fragmented packets
         if pkt_S is not None:
             # if statemen to either add packet to fragment_packs or join the list and send recieved messege
-            if pkt_S[NetworkPacket.dst_addr_S_length] == '1':
+            if pkt_S[NetworkPacket.src_addr_S_length] == '1':
                 # add part of frag packet to the list (getting all the data after the initial headers of the packet
                 self.fragmented_data.append(
                     pkt_S[NetworkPacket.dst_addr_S_length + NetworkPacket.flag_length + NetworkPacket.frag_offset_len:])
             # no more fragments
             else:
                 # append data to the fragmented data list
-                self.fragmented_data.append(pkt_S[NetworkPacket.dst_addr_S_length:])
+                self.fragmented_data.append(pkt_S[NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length:])
                 # gets the actual flags and other stuff instead of fragmented data
                 # join the data stored in the list
 
@@ -205,6 +209,8 @@ class Router:
                 # if packet exists make a forwarding decision
                 if pkt_S is not None:
                     p = NetworkPacket.from_byte_S(self.out_intf_L[0].mtu, pkt_S)  # parse a packet out
+                    source = pkt_S[4:5]
+                    #s = p.src_address
                     # HERE you will need to implement a lookup into the
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i

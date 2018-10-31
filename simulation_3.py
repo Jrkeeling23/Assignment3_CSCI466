@@ -20,10 +20,10 @@ if __name__ == '__main__':
     object_L.append(client_1)
     client_2 = network_3.Host(2)
     object_L.append(client_2)
-    server_1 = network_3.Host(3)
-    object_L.append(server_1)
-    server_2 = network_3.Host(4)
-    object_L.append(server_2)
+    client_3 = network_3.Host(3)
+    object_L.append(client_3)
+    client_4 = network_3.Host(4)
+    object_L.append(client_4)
 
     # in forwarding table: first value is source address and second is out interface
     router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size, forwarding_table={1: 0, 2: 1})
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     object_L.append(router_b)
     router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size, forwarding_table={2: 0})
     object_L.append(router_c)
-    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, forwarding_table={1: 0, 2: 0})
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, forwarding_table={1: 0, 2: 1})
     object_L.append(router_d)
 
     # create a Link Layer to keep track of links between network nodes
@@ -42,10 +42,13 @@ if __name__ == '__main__':
     # add all the links
     # link parameters: from_node, from_intf_num, to_node, to_intf_num, mtu
     link_layer.add_link(link.Link(client_1, 0, router_a, 0, 50))
-    link_layer.add_link(link.Link(client_2, 0, router_a, 0, 50))
+    link_layer.add_link(link.Link(client_2, 0, router_a, 1, 50))
     link_layer.add_link(link.Link(router_a, 0, router_b, 0, 50))
-    link_layer.add_link(link.Link(router_a, 0, router_c, 0, 50))
-    link_layer.add_link(link.Link(client_2, 0, router_a, 0, 50))
+    link_layer.add_link(link.Link(router_a, 1, router_c, 0, 50))
+    link_layer.add_link(link.Link(router_b, 0, router_d, 0, 50))
+    link_layer.add_link(link.Link(router_c, 0, router_d, 1, 50))
+    link_layer.add_link(link.Link(router_d, 0, client_3, 0, 50))
+    link_layer.add_link(link.Link(router_d, 1, client_4, 0, 50))
 
     # start all the objects
     thread_L = []
@@ -55,19 +58,20 @@ if __name__ == '__main__':
     thread_L.append(threading.Thread(name=router_b.__str__(), target=router_b.run))
     thread_L.append(threading.Thread(name=router_c.__str__(), target=router_c.run))
     thread_L.append(threading.Thread(name=router_d.__str__(), target=router_d.run))
-    thread_L.append(threading.Thread(name=server_1.__str__(), target=server_1.run))
-    thread_L.append(threading.Thread(name=server_2.__str__(), target=server_2.run))
+    thread_L.append(threading.Thread(name=client_3.__str__(), target=client_3.run))
+    thread_L.append(threading.Thread(name=client_4.__str__(), target=client_4.run))
 
     thread_L.append(threading.Thread(name="Network", target=link_layer.run))
 
     for t in thread_L:
         t.start()
         # create string for messege
-    messege = 'THIS IS A REALLLY LONG STRRRRRRRRRRRRRRRRIIIIIIING...%d'
+    message = 'THIS IS A REALLLY LONG STRRRRRRRRRRRRRRRRIIIIIIING...%d'
     # create some send events
 
     for i in range(1):
-        client.udt_send(2, messege % i)
+        client_1.udt_send(3, message % i)  # send to server 1
+        client_2.udt_send(4, message % i)  # send to server 2
     # give the network sufficient time to transfer all packets before quitting
     sleep(simulation_time)
 
