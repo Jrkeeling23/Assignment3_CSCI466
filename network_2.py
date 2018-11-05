@@ -80,12 +80,12 @@ class NetworkPacket:
         offset = 0
 
         # if the size of the packet is larger than our mtu we must fragment it
-        if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])> mtu):
+        if NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:]) > mtu:
             fragment = 1
             # fragment packet and set offset for next packet
             while(len(data_S[offset:]) != 0):
                 # if size is <= mtu set frag to 0 (python did not like <=, split into < and ==)
-                if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) < mtu or (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) == mtu:
+                if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) < mtu or (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:]) == mtu):
                     fragment = 0
                 # get the value of the next offset
                 next_offset = offset + mtu - self.flag_length - self.frag_offset_len
@@ -219,6 +219,7 @@ class Router:
                             self.out_intf_L[i].put(x.to_byte_S(), True)
                             print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
                             % (self, x.to_byte_S(), i, i, self.out_intf_L[0].mtu))
+
                     else:
                         self.out_intf_L[i].put(p.to_byte_S(), True)
                         print('2: %s: forwarding packet "%s" from interface %d to %d with mtu %d' \
