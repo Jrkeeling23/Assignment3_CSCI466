@@ -80,7 +80,7 @@ class NetworkPacket:
         offset = 0
 
         # if the size of the packet is larger than our mtu we must fragment it
-        if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) > mtu:
+        if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])> mtu):
             fragment = 1
             # fragment packet and set offset for next packet
             while(len(data_S[offset:]) != 0):
