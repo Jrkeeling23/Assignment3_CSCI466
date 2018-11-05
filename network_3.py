@@ -73,7 +73,8 @@ class NetworkPacket:
     @classmethod
     def from_byte_S(self, mtu, byte_S):
         src_addr = int(byte_S[0: NetworkPacket.src_addr_S_length])
-        dst_addr = int(byte_S[0: NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length])
+        dst_addr = int(
+            byte_S[NetworkPacket.src_addr_S_length: NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length])
         data_S = byte_S[NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length:]
         # setting frag to 0 and offset to so as well as creating array to store data if packet is fragmented
         fragment_packs = []
@@ -85,7 +86,7 @@ class NetworkPacket:
         if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) > mtu:
             fragment = 1
             # fragment packet and set offset for next packet
-            while (len(data_S[offset:]) != 0):
+            while len(data_S[offset:]) != 0:
                 # if size is <= mtu set frag to 0 (python did not like <=, split into < and ==)
                 if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) < mtu or (
                         NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) == mtu:
@@ -98,7 +99,7 @@ class NetworkPacket:
                 offset = next_offset
             return fragment_packs
         else:
-            return self(src_addr, dst_addr, data_S, fragment, offset)
+            return [self(src_addr, dst_addr, data_S, fragment, offset)]
         # end of new network packet
 
 
@@ -153,7 +154,9 @@ class Host:
             if pkt_S[NetworkPacket.src_addr_S_length] == '1':
                 # add part of frag packet to the list (getting all the data after the initial headers of the packet
                 self.fragmented_data.append(
-                    pkt_S[NetworkPacket.dst_addr_S_length + NetworkPacket.flag_length + NetworkPacket.frag_offset_len:])
+                    pkt_S[
+                    NetworkPacket.src_addr_S_length + NetworkPacket.dst_addr_S_length + NetworkPacket.flag_length +
+                    NetworkPacket.frag_offset_len:])
             # no more fragments
             else:
                 # append data to the fragmented data list
@@ -200,7 +203,7 @@ class Router:
     # appropriate outgoing interfaces
     def forward(self):
         # make sure MTU is set to 30
-        self.out_intf_L[0].mtu = 30
+        self.out_intf_L[0].mtu = 45
         for i in range(len(self.in_intf_L)):
             pkt_S = None
             try:
@@ -209,26 +212,21 @@ class Router:
                 # if packet exists make a forwarding decision
                 if pkt_S is not None:
                     p = NetworkPacket.from_byte_S(self.out_intf_L[0].mtu, pkt_S)  # parse a packet out
-                    source = pkt_S[4:5]
-                    #s = p.src_address
-                    # HERE you will need to implement a lookup into the
+                    src = pkt_S[4:5]
+                    out_route = self.forwarding_table.get(int(src))
+                    # HERE you will need to implement a lookup into the:
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
                     # if p is a list iterate through it, else just do what is done is default network.py
-                    if (isinstance(p, list)):
-                        ## for all our possible fragment packets (p) do things
-                        for x in p:
-                            self.out_intf_L[i].put(x.to_byte_S(), True)
-                            print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                                  % (self, x.to_byte_S(), i, i, self.out_intf_L[0].mtu))
-                    else:
-                        self.out_intf_L[i].put(p.to_byte_S(), True)
-                        print('2: %s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                              % (self, p, i, i, self.out_intf_L[i].mtu))
+                    ## for all our possible fragment packets (p) do things
+                    for x in p:
+                        self.out_intf_L[int(out_route)].put(x.to_byte_S(), True)
+                        print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                              % (self, x.to_byte_S(), i, out_route, self.out_intf_L[0].mtu))
 
             except queue.Full:
                 print('%s: packet "%s" lost on interface %d' % (self, p, i))
-                pass
+            pass
 
     ## thread target for the host to keep forwarding data
     def run(self):

@@ -10,7 +10,7 @@ from time import sleep
 
 ##configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 5  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 10  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
     object_L = []  # keeps track of objects, so we can kill their threads
@@ -26,13 +26,13 @@ if __name__ == '__main__':
     object_L.append(client_4)
 
     # in forwarding table: first value is source address and second is out interface
-    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size, forwarding_table={1: 0, 2: 1})
+    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size, forwarding_table={3: 0, 4: 1})
     object_L.append(router_a)
-    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size, forwarding_table={1: 0})
+    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size, forwarding_table={3: 0})
     object_L.append(router_b)
-    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size, forwarding_table={2: 0})
+    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size, forwarding_table={4: 0})
     object_L.append(router_c)
-    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, forwarding_table={1: 0, 2: 1})
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, forwarding_table={3: 0, 4: 1})
     object_L.append(router_d)
 
     # create a Link Layer to keep track of links between network nodes
