@@ -83,7 +83,7 @@ class NetworkPacket:
         offset = 0
 
         # if the size of the packet is larger than our mtu we must fragment it
-        if (NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:])) > mtu:
+        if NetworkPacket.flag_length + NetworkPacket.frag_offset_len + len(data_S[offset:]) > mtu:
             fragment = 1
             # fragment packet and set offset for next packet
             while len(data_S[offset:]) != 0:
@@ -209,11 +209,13 @@ class Router:
             try:
                 # get packet from interface i
                 pkt_S = self.in_intf_L[i].get()
+
                 # if packet exists make a forwarding decision
                 if pkt_S is not None:
                     p = NetworkPacket.from_byte_S(self.out_intf_L[0].mtu, pkt_S)  # parse a packet out
-                    src = pkt_S[4:5]
-                    out_route = self.forwarding_table.get(int(src))
+                    #src = pkt_S[4:5]
+                    dst = pkt_S[9:10]  #get the destination of the incoming packet
+                    out_route = self.forwarding_table.get(int(dst))
                     # HERE you will need to implement a lookup into the:
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
